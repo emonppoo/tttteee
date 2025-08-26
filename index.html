@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vault — Encrypted Local Password Manager (With VFX)</title>
+<meta name="description" content="Local encrypted vault demo with animated visual effects (CSS + JS)" />
+<style>
+  /* ===== Page layout ===== */
+  :root{
+    --bg1:#0f172a; --bg2:#071029; --accent:#38bdf8; --accent2:#7c3aed; --glass: rgba(255,255,255,0.06);
+    --card: rgba(255,255,255,0.04); --muted:#94a3b8;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;}
+  body{
+    background: radial-gradient(ellipse at 10% 10%, rgba(124,58,237,0.12), transparent 8%),
+                radial-gradient(ellipse at 90% 90%, rgba(56,189,248,0.08), transparent 8%),
+                linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#e6eef8; -webkit-font-smoothing:antialiased;padding:28px;
+    overflow-y:auto;
+  }
+  .wrap{max-width:1100px;margin:0 auto;position:relative}
+
+  /* ===== Animated header / neon ===== */
+  header{display:flex;align-items:center;gap:18px}
+  .logo{
+    width:72px;height:72px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:#001;box-shadow:0 6px 30px rgba(124,58,237,0.22),0 2px 8px rgba(0,0,0,0.6);
+    transform:translateZ(0);filter:drop-shadow(0 6px 18px rgba(56,189,248,0.12));
+  }
+  h1{font-size:1.6rem;margin:0}
+  p.lead{margin:0;color:var(--muted)}
+
+  /* ===== Particle floaters (pure CSS animated) ===== */
+  .sky{position:fixed;inset:0;pointer-events:none;z-index:0}
+  .dot{position:absolute;border-radius:50%;opacity:0.12;mix-blend-mode:screen;animation:float 12s linear infinite}
+  .dot.small{width:8px;height:8px}
+  .dot.med{width:14px;height:14px}
+  .dot.big{width:28px;height:28px}
+  .dot.c1{background:linear-gradient(45deg, rgba(56,189,248,0.9), rgba(124,58,237,0.7))}
+  .dot.c2{background:linear-gradient(45deg, rgba(124,58,237,0.9), rgba(99,102,241,0.65))}
+  @keyframes float{0%{transform:translateY(0) translateX(0)}50%{transform:translateY(-40vh) translateX(6vw)}100%{transform:translateY(0) translateX(-8vw)}}
+
+  /* ===== Main UI grid ===== */
+  main{position:relative;z-index:1;display:grid;grid-template-columns:1fr 360px;gap:22px;margin-top:20px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);padding:16px;border-radius:12px;box-shadow:0 8px 40px rgba(2,6,23,0.6);backdrop-filter: blur(8px)}
+
+  /* ===== Forms ===== */
+  label{display:block;font-size:0.85rem;color:var(--muted);margin-top:8px}
+  input,button,textarea{font-size:1rem;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+  input::placeholder{color:rgba(230,238,248,0.36)}
+  .row{display:flex;gap:10px}
+  button{cursor:pointer}
+
+  /* neon buttons */
+  .btn{
+    padding:10px 14px;border:none;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#001;font-weight:600;box-shadow:0 8px 30px rgba(124,58,237,0.12),0 2px 8px rgba(0,0,0,0.5);
+    transition:transform .15s ease,filter .15s;outline:none
+  }
+  .btn:active{transform:translateY(1px) scale(.998)}
+  .ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+
+  /* list */
+  #itemsList .item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);margin-bottom:10px}
+  #itemsList .meta{opacity:0.85}
+  code{background:rgba(0,0,0,0.2);padding:6px;border-radius:6px}
+
+  /* reveal animation */
+  .revealAnim{animation:pop .28s ease}
+  @keyframes pop{0%{transform:scale(.98);opacity:0}100%{transform:scale(1);opacity:1}}
+
+  /* footer */
+  footer{margin-top:18px;color:var(--muted);font-size:0.9rem;text-align:center}
+
+  /* responsive */
+  @media (max-width:980px){main{grid-template-columns:1fr} .logo{width:56px;height:56px}}
+
+  /* small shimmer effect for headings */
+  h2.shimmer{position:relative;display:inline-block;background:linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.25), rgba(255,255,255,0.06));-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body>
+  <div class="sky" aria-hidden="true">
+    <div class="dot small c1" style="left:8%;bottom:10%"></div>
+    <div class="dot med c2" style="left:28%;bottom:4%"></div>
+    <div class="dot big c1" style="left:64%;bottom:12%"></div>
+    <div class="dot med c1" style="left:84%;bottom:20%"></div>
+    <div class="dot small c2" style="left:52%;bottom:6%"></div>
+  </div>
+
+  <div class="wrap">
+    <header>
+      <div class="logo">V</div>
+      <div>
+        <h1>Encrypted Vault</h1>
+        <p class="lead">Local, client-side encrypted password vault — demo with VFX</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2 class="shimmer">Secure Vault</h2>
+        <p style="color:var(--muted)">This demo keeps everything encrypted in your browser. Visual effects are for UX only.</p>
+
+        <!-- Unlock / Create -->
+        <div style="margin-top:12px">
+          <label>Master password</label>
+          <div class="row">
+            <input id="master" type="password" placeholder="Enter strong master password" />
+            <button id="unlockBtn" class="btn">Unlock</button>
+            <button id="createBtn" class="ghost">Create</button>
+          </div>
+          <small style="display:block;margin-top:6px;color:var(--muted)">Vault stored encrypted in localStorage (demo). Don't forget your master password.</small>
+        </div>
+
+        <!-- Manager UI -->
+        <div id="manager" style="display:none;margin-top:14px">
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:12px 0" />
+          <label>Site / Service</label>
+          <input id="site" placeholder="Gmail, Facebook, Bank" />
+          <label>Username / Email</label>
+          <input id="uname" placeholder="you@example.com" />
+          <label>Password</label>
+          <div class="row">
+            <input id="pwd" placeholder="password" />
+            <button id="generatePwd" class="ghost">Generate</button>
+            <button id="saveItem" class="btn">Save</button>
+          </div>
+
+          <div style="margin-top:12px">
+            <h3 style="margin:0 0 8px 0">Vault Items</h3>
+            <div id="itemsList"></div>
+            <div class="row" style="margin-top:8px">
+              <button id="exportBtn" class="ghost">Export Encrypted</button>
+              <button id="importBtn" class="ghost">Import Encrypted</button>
+              <input type="file" id="importFile" style="display:none" />
+            </div>
+            <div style="margin-top:10px" class="row">
+              <button id="lockBtn" class="ghost">Lock</button>
+              <button id="clearAll" style="background:#ff6b6b;color:#001;border:none;padding:10px;border-radius:8px">Delete All</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card" style="height:fit-content">
+        <h2 style="margin-top:0">Tips & Animations</h2>
+        <ul style="color:var(--muted)">
+          <li>Use a long master password (passphrase) — store it somewhere safe.</li>
+          <li>Enable 2FA on your critical accounts.</li>
+          <li>Visual effects are CSS-driven; they don't affect encryption.</li>
+        </ul>
+        <p style="color:var(--muted);font-size:0.9rem">Want different color theme (red, green, purple) or heavier particle effects? Tell me and I'll update.</p>
+      </aside>
+    </main>
+
+    <footer>
+      <p style="color:var(--muted)">Demo — not a production password manager. For real use consider Bitwarden / 1Password / KeePass.</p>
+    </footer>
+  </div>
+
+<script>
+/* ===== Vault crypto + logic (kept from previous demo) ===== */
+const STORAGE_KEY = 'enc_vault';
+const SALT_KEY = 'vault_salt';
+const ITERATIONS = 250000;
+function bufToB64(b){ return btoa(String.fromCharCode(...new Uint8Array(b))); }
+function b64ToBuf(s){ return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); }
+async function deriveKey(master, saltB64){
+  const enc = new TextEncoder();
+  const passKey = await crypto.subtle.importKey('raw', enc.encode(master), 'PBKDF2', false, ['deriveKey']);
+  const salt = b64ToBuf(saltB64);
+  const key = await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ITERATIONS,hash:'SHA-256'}, passKey, {name:'AES-GCM',length:256}, false, ['encrypt','decrypt']);
+  return key;
+}
+async function encryptVault(key, plaintextJson){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, enc.encode(plaintextJson));
+  return {iv: bufToB64(iv), ct: bufToB64(ct)};
+}
+async function decryptVault(key, ivB64, ctB64){
+  const iv = b64ToBuf(ivB64);
+  const ct = b64ToBuf(ctB64).buffer;
+  const dec = await crypto.subtle.decrypt({name:'AES-GCM',iv}, key, ct);
+  return new TextDecoder().decode(dec);
+}
+
+/* UI */
+const masterInput = document.getElementById('master');
+const unlockBtn = document.getElementById('unlockBtn');
+const createBtn = document.getElementById('createBtn');
+const managerDiv = document.getElementById('manager');
+const saveItemBtn = document.getElementById('saveItem');
+const itemsList = document.getElementById('itemsList');
+const siteInput = document.getElementById('site');
+const unameInput = document.getElementById('uname');
+const pwdInput = document.getElementById('pwd');
+const generateBtn = document.getElementById('generatePwd');
+const lockBtn = document.getElementById('lockBtn');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const importFile = document.getElementById('importFile');
+const clearAllBtn = document.getElementById('clearAll');
+let masterKey = null; let vault = []; let currentKeyObj = null;
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"]+/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' })[c]||''); }
+
+function showItems(){ itemsList.innerHTML=''; if(vault.length===0){ itemsList.innerHTML='<p style="color:var(--muted)">No items yet.</p>'; return; }
+  vault.forEach((it,idx)=>{
+    const div = document.createElement('div'); div.className='item';
+    div.innerHTML = `<div><strong>${escapeHtml(it.site)}</strong><div class="meta">${escapeHtml(it.username)}</div></div>
+                     <div style="display:flex;align-items:center;gap:8px">
+                       <code id="pw${idx}">********</code>
+                       <button data-idx="${idx}" class="ghost">Reveal</button>
+                       <button data-idx="${idx}" class="ghost" style="background:#ffdddd;color:#001">Delete</button>
+                     </div>`;
+    itemsList.appendChild(div);
+  });
+  itemsList.querySelectorAll('.ghost').forEach(btn=>{
+    btn.onclick=(e)=>{
+      const i = +e.target.dataset.idx;
+      if(e.target.textContent.trim()==='Reveal'){
+        document.getElementById('pw'+i).textContent = vault[i].password;
+        e.target.textContent = 'Hide'; e.target.classList.add('revealAnim');
+      } else if(e.target.textContent.trim()==='Hide'){
+        document.getElementById('pw'+i).textContent = '********'; e.target.textContent='Reveal';
+      } else {
+        if(!confirm('Delete this item?')) return; vault.splice(i,1); saveVaultToStorage().then(()=>showItems());
+      }
+    }
+  });
+}
+
+async function saveVaultToStorage(){ if(!currentKeyObj || !masterKey) throw new Error('No key'); const plaintext = JSON.stringify(vault); const enc = await encryptVault(masterKey, plaintext); const stored = {iv: enc.iv, ct: enc.ct}; localStorage.setItem(STORAGE_KEY, JSON.stringify(stored)); }
+
+async function unlockExistingVault(master){ const storedRaw = localStorage.getItem(STORAGE_KEY); const saltB64 = localStorage.getItem(SALT_KEY); if(!storedRaw || !saltB64) throw new Error('No vault found'); const stored = JSON.parse(storedRaw); const key = await deriveKey(master, saltB64); const plaintext = await decryptVault(key, stored.iv, stored.ct); vault = JSON.parse(plaintext); masterKey = key; currentKeyObj = {saltB64, ivB64: stored.iv, ctB64: stored.ct}; managerDiv.style.display='block'; showItems(); }
+
+async function createNewVault(master){ const salt = crypto.getRandomValues(new Uint8Array(16)); const saltB64 = bufToB64(salt); localStorage.setItem(SALT_KEY, saltB64); vault = []; const key = await deriveKey(master, saltB64); masterKey = key; currentKeyObj = {saltB64}; await saveVaultToStorage(); managerDiv.style.display='block'; showItems(); }
+
+unlockBtn.onclick = async ()=>{ try{ const m = masterInput.value; if(!m) return alert('Enter master password'); unlockBtn.textContent='Unlocking...'; await unlockExistingVault(m); unlockBtn.textContent='Unlock'; alert('Vault unlocked'); }catch(err){ console.error(err); unlockBtn.textContent='Unlock'; alert('Failed to unlock: '+err.message); } };
+createBtn.onclick = async ()=>{ try{ const m = masterInput.value; if(!m) return alert('Enter a strong master password'); if(confirm('Create new vault? This will overwrite existing data.')){ createBtn.textContent='Creating...'; await createNewVault(m); createBtn.textContent='Create'; alert('New vault created'); } }catch(err){ console.error(err); createBtn.textContent='Create'; alert('Create failed: '+err.message); } };
+
+saveItemBtn.onclick = async ()=>{ try{ if(!masterKey) return alert('Unlock vault first'); const it = {site:siteInput.value||'', username:unameInput.value||'', password:pwdInput.value||''}; if(!it.site || !it.password) return alert('Provide site and password'); vault.push(it); await saveVaultToStorage(); siteInput.value=''; unameInput.value=''; pwdInput.value=''; showItems(); }catch(err){ console.error(err); alert('Save failed: '+err.message); } };
+generateBtn.onclick = ()=> pwdInput.value = generateRandom(14);
+function generateRandom(length){ const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}<>?'; let out=''; const arr = new Uint32Array(length); crypto.getRandomValues(arr); for(let i=0;i<length;i++) out += chars[arr[i] % chars.length]; return out; }
+
+lockBtn.onclick = ()=>{ masterKey=null; vault=[]; currentKeyObj=null; managerDiv.style.display='none'; masterInput.value=''; itemsList.innerHTML=''; alert('Vault locked (in-memory cleared).'); };
+
+exportBtn.onclick = ()=>{ const raw = localStorage.getItem(STORAGE_KEY); const salt = localStorage.getItem(SALT_KEY); if(!raw || !salt) return alert('No encrypted vault to export'); const blob = new Blob([JSON.stringify({salt,encrypted:JSON.parse(raw)})], {type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='vault-backup.json'; a.click(); URL.revokeObjectURL(url); };
+importBtn.onclick = ()=> importFile.click();
+importFile.onchange = async (ev)=>{ const f = ev.target.files[0]; if(!f) return; const text = await f.text(); try{ const obj = JSON.parse(text); if(!obj.salt || !obj.encrypted) throw new Error('Invalid file'); localStorage.setItem(SALT_KEY, obj.salt); localStorage.setItem(STORAGE_KEY, JSON.stringify(obj.encrypted)); alert('Imported encrypted backup. Now unlock with master password.'); }catch(e){ alert('Import failed: '+e.message); } importFile.value=''; };
+clearAllBtn.onclick = ()=>{ if(confirm('Delete ALL vault data from this browser? This cannot be undone.')){ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(SALT_KEY); lockBtn.onclick(); alert('All vault data removed.'); } };
+</script>
+</body>
+</html>
